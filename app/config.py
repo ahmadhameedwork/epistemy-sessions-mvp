@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT / ".env", extra="ignore")
 
     openai_api_key: str = ""
+    deepseek_api_key: str = ""
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"
     langsmith_tracing: bool = True

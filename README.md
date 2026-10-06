@@ -39,7 +39,31 @@ LANGSMITH_PROJECT=epistemy-sessions
 
 **Transcript fallback replaces transcription only. New generated content still requires an LLM API key.** Without keys, login, seeded sessions, editing, booking controls, paid status, and public links work. New generation displays a configuration error instead of fabricating AI output.
 
-For other model providers, install their LangChain integration, set `LLM_PROVIDER` and `LLM_MODEL`, and supply the provider's credentials using its documented environment variables. The chosen chat model must support `with_structured_output`. OpenAI is the installed and tested default integration; other providers have not been verified.
+### DeepSeek instead of OpenAI
+
+Keep your API key in the ignored local `.env` file; do not paste it into chat or commit it.
+For DeepSeek generation, use:
+
+```dotenv
+LLM_PROVIDER=deepseek
+LLM_MODEL=deepseek-flash
+DEEPSEEK_API_KEY=your-key
+USE_FALLBACK_TRANSCRIPTS=true
+```
+
+Restart the app after changing `.env`. No OpenAI key is required in this mode.
+`langchain-deepseek` is included in the requirements. The app uses LangChain's
+Pydantic structured output through tool calling and explicitly disables thinking
+mode because the current DeepSeek API rejects forced tool choices in thinking mode.
+The same quiz repair and human-review graph runs for either provider.
+See [DeepSeek's model list](https://api-docs.deepseek.com/quick_start/pricing/) and
+[tool calling documentation](https://api-docs.deepseek.com/api/create-chat-completion/).
+
+DeepSeek supplies lesson analysis, not Whisper transcription. Keep sample transcript
+mode enabled without an OpenAI key. Live DeepSeek responses require your credentials;
+automated tests exercise its actual LangChain adapter against mocked HTTP responses.
+
+For other model providers, install their LangChain integration, set `LLM_PROVIDER` and `LLM_MODEL`, and supply the provider's credentials using its documented environment variables. The chosen chat model must support `with_structured_output`. OpenAI and DeepSeek integrations are installed; other providers have not been verified. OpenAI remains the default in `.env.example` to match the build specification.
 
 Tracing is enabled when `LANGSMITH_TRACING=true` and a LangSmith key is present; otherwise it is disabled so the seeded app can run without tracing credentials. `.env` settings are loaded into the tracing environment. Non-default LangSmith regions can additionally set `LANGSMITH_ENDPOINT` in the shell environment before starting the app.
 
