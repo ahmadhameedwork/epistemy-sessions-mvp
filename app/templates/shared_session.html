@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} — Epistemy{% endblock %}
+{% block content %}
+{% if not public %}<p><a href="/student">← Your vault</a></p>{% endif %}
+<h1>{{ lesson.title }}</h1>
+<p>{{ lesson.tutor.name }} · {{ lesson.created_at.strftime('%Y-%m-%d') }} · <span class="badge">{{ 'Paid' if lesson.paid else 'Unpaid' }}</span></p>
+{% if lesson.tutor.calendly_url %}<p><a class="button" href="{{ lesson.tutor.calendly_url }}" target="_blank" rel="noopener noreferrer">Book Session</a></p>{% endif %}
+{% set output = lesson.output %}
+<section class="card"><h2>{{ output.subject }}</h2><p>{{ output.subtopics | join(' · ') }}</p><h3>Summary</h3><p class="prose">{{ output.summary }}</p><h3>Progress feedback</h3><p class="prose">{{ output.progress_feedback }}</p>
+<h3>Strengths</h3><ul>{% for item in output.strengths %}<li>{{ item }}</li>{% else %}<li>No specific strengths recorded.</li>{% endfor %}</ul>
+<h3>Areas to improve</h3><ul>{% for item in output.areas_to_improve %}<li>{{ item }}</li>{% else %}<li>No specific areas recorded.</li>{% endfor %}</ul></section>
+<h2>Practice quiz</h2><p>Try each question before revealing its answer.</p>
+{% for q in output.quiz %}<article><h3>{{ loop.index }}. {{ q.question }}</h3><p class="muted">Difficulty: {{ q.difficulty }}{% if not lesson.previous_session_id %} (baseline){% endif %}</p>
+{% if q.options %}<ol type="A">{% for option in q.options %}<li>{{ option }}</li>{% endfor %}</ol>{% endif %}
+<details><summary>Reveal answer and explanation</summary><p><strong>{{ q.answer }}</strong></p><p class="prose">{{ q.explanation }}</p></details></article>{% endfor %}
+{% endblock %}

@@ -16,7 +16,7 @@ def demo(tmp_path, monkeypatch):
     engine = make_engine(f"sqlite:///{tmp_path / 'app.db'}")
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine, expire_on_commit=False)
-    for name in ["app.db", "app.web", "app.routes.auth", "app.routes.tutor", "app.services.pipeline", "seed"]:
+    for name in ["app.db", "app.web", "app.routes.auth", "app.routes.tutor", "app.routes.student", "app.services.pipeline", "seed"]:
         module = importlib.import_module(name)
         monkeypatch.setattr(module, "SessionLocal", factory)
     monkeypatch.setattr(importlib.import_module("app.db"), "engine", engine)
