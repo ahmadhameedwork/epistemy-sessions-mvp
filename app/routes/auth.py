@@ -18,7 +18,9 @@ def home(request: Request):
 def login_form(request: Request):
     with SessionLocal() as db:
         users = db.scalars(select(User).order_by(User.id)).all()
-    return templates.TemplateResponse(request=request, name="login.html", context={"users": users})
+    return templates.TemplateResponse(
+        request=request, name="login.html", context={"users": users}
+    )
 
 
 @router.post("/login")

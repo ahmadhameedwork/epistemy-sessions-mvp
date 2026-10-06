@@ -25,9 +25,13 @@ def test_whisper_call_and_selected_fallback(tmp_path, monkeypatch):
         calls.append((kwargs["model"], kwargs["file"].read()))
         return SimpleNamespace(text=" Actual transcript. ")
 
-    client = SimpleNamespace(audio=SimpleNamespace(transcriptions=SimpleNamespace(create=create)))
+    client = SimpleNamespace(
+        audio=SimpleNamespace(transcriptions=SimpleNamespace(create=create))
+    )
     monkeypatch.setattr(transcription, "OpenAI", lambda **kwargs: client)
-    assert transcription.transcribe_session(str(recording), None) == "Actual transcript."
+    assert (
+        transcription.transcribe_session(str(recording), None) == "Actual transcript."
+    )
     assert calls == [("whisper-1", b"mock recording")]
 
     def fail(**kwargs):

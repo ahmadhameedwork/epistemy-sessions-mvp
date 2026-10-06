@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -7,16 +7,19 @@ class Result(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
 
+NonemptyText = Annotated[str, Field(min_length=1)]
+
+
 class TopicResult(Result):
     subject: str = Field(min_length=1)
-    subtopics: list[str] = Field(min_length=1)
+    subtopics: list[NonemptyText] = Field(min_length=1)
 
 
 class ProgressResult(Result):
     summary: str = Field(min_length=1)
     feedback: str = Field(min_length=1)
-    strengths: list[str]
-    areas_to_improve: list[str]
+    strengths: list[NonemptyText]
+    areas_to_improve: list[NonemptyText]
 
 
 class QuizQuestion(Result):
@@ -24,7 +27,9 @@ class QuizQuestion(Result):
     question: str = Field(min_length=1)
     type: Literal["multiple_choice", "short_answer"]
     options: list[str] | None
-    answer: str = Field(min_length=1, description="For multiple choice, the exact text of one option.")
+    answer: str = Field(
+        min_length=1, description="For multiple choice, the exact text of one option."
+    )
     explanation: str = Field(min_length=1)
     difficulty: Literal["easier", "same", "harder"]
 
@@ -50,12 +55,22 @@ def quiz_errors(questions: list[dict]) -> list[str]:
         ids.add(q.id)
         if q.type == "multiple_choice":
             options = q.options or []
-            if len(options) != 4 or any(not item.strip() for item in options) or len(set(options)) != 4:
-                errors.append(f"Question {index}: provide four distinct nonempty options.")
+            if (
+                len(options) != 4
+                or any(not item.strip() for item in options)
+                or len(set(options)) != 4
+            ):
+                errors.append(
+                    f"Question {index}: provide four distinct nonempty options."
+                )
             if q.answer not in options:
-                errors.append(f"Question {index}: answer must exactly match one option.")
+                errors.append(
+                    f"Question {index}: answer must exactly match one option."
+                )
         elif q.options:
-            errors.append(f"Question {index}: short-answer questions must have no options.")
+            errors.append(
+                f"Question {index}: short-answer questions must have no options."
+            )
     return errors
 
 
@@ -69,9 +84,12 @@ class EditedOutput(Result):
     quiz: list[QuizQuestion]
 
     @model_validator(mode="after")
-    def valid_content(self):
+    def valid_content(self) -> Self:
         errors = quiz_errors([q.model_dump() for q in self.quiz])
-        if any(not value.strip() for value in self.subtopics + self.strengths + self.areas_to_improve):
+        if any(
+            not value.strip()
+            for value in self.subtopics + self.strengths + self.areas_to_improve
+        ):
             errors.append("List entries cannot be blank.")
         if errors:
             raise ValueError(" ".join(errors))

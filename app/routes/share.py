@@ -12,8 +12,19 @@ router = APIRouter(prefix="/share")
 @router.get("/{token}", name="public_session")
 def public_session(request: Request, token: str):
     with SessionLocal() as db:
-        lesson = db.scalar(select(Session).where(Session.share_token == token, Session.status == "shared")
-                           .options(joinedload(Session.output), joinedload(Session.tutor), joinedload(Session.student)))
+        lesson = db.scalar(
+            select(Session)
+            .where(Session.share_token == token, Session.status == "shared")
+            .options(
+                joinedload(Session.output),
+                joinedload(Session.tutor),
+                joinedload(Session.student),
+            )
+        )
         if lesson is None or lesson.output is None:
             raise HTTPException(404, "Share link not found.")
-        return templates.TemplateResponse(request=request, name="shared_session.html", context={"lesson": lesson, "public": True})
+        return templates.TemplateResponse(
+            request=request,
+            name="shared_session.html",
+            context={"lesson": lesson, "public": True},
+        )

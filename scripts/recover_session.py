@@ -1,4 +1,5 @@
 """Resume a processing session from its last durable checkpoint. Stop the web server first."""
+
 import argparse
 
 from app.db import SessionLocal, init_db
@@ -14,14 +15,18 @@ def run():
     with SessionLocal() as db:
         lesson = db.get(Session, args.session_id)
         if lesson is None or lesson.status != "processing":
-            raise SystemExit("Choose an existing processing session. Draft reviews resume through Share.")
+            raise SystemExit(
+                "Choose an existing processing session. Draft reviews resume through Share."
+            )
     pipeline = Pipeline()
     try:
         snapshot = pipeline.graph.get_state(pipeline.config(args.session_id))
         if not snapshot.values:
             raise SystemExit("No checkpoint exists. Upload this session again.")
         if snapshot.values.get("error") and not snapshot.next:
-            raise SystemExit("Quiz repair was exhausted. Upload this session again; this checkpoint cannot continue.")
+            raise SystemExit(
+                "Quiz repair was exhausted. Upload this session again; this checkpoint cannot continue."
+            )
         pipeline.run(args.session_id, recover=True)
     finally:
         pipeline.close()

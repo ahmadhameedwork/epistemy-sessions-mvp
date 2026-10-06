@@ -10,7 +10,11 @@ templates = Jinja2Templates(directory=str(ROOT / "app/templates"))
 
 def current_user(request: Request, role: str | None = None) -> User:
     with SessionLocal() as db:
-        user = db.get(User, request.session.get("user_id")) if request.session.get("user_id") else None
+        user = (
+            db.get(User, request.session.get("user_id"))
+            if request.session.get("user_id")
+            else None
+        )
     if user is None:
         raise HTTPException(303, headers={"Location": "/login"})
     if role and user.role != role:

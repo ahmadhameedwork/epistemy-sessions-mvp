@@ -7,7 +7,9 @@ from app.schemas import EditedOutput
 
 
 def human_review(state: SessionState) -> dict:
-    decision = interrupt({"session_id": state["session_id"], "output": output_from_state(state)})
+    decision = interrupt(
+        {"session_id": state["session_id"], "output": output_from_state(state)}
+    )
     if not isinstance(decision, dict) or decision.get("approved") is not True:
         raise ValueError("Publishing requires tutor approval.")
     content = EditedOutput.model_validate(decision["output"]).model_dump()
@@ -17,9 +19,15 @@ def human_review(state: SessionState) -> dict:
 def reviewed_state(content: dict, edited: bool) -> dict:
     return {
         "topics": {"subject": content["subject"], "subtopics": content["subtopics"]},
-        "progress": {"summary": content["summary"], "feedback": content["progress_feedback"],
-                     "strengths": content["strengths"], "areas_to_improve": content["areas_to_improve"]},
-        "quiz": content["quiz"], "approved": True, "edited": edited,
+        "progress": {
+            "summary": content["summary"],
+            "feedback": content["progress_feedback"],
+            "strengths": content["strengths"],
+            "areas_to_improve": content["areas_to_improve"],
+        },
+        "quiz": content["quiz"],
+        "approved": True,
+        "edited": edited,
     }
 
 
@@ -28,7 +36,11 @@ def transcribe(state: SessionState) -> dict:
         return {}
     from app.services.transcription import transcribe_session
 
-    return {"transcript": transcribe_session(state.get("video_path"), state.get("fallback_id"))}
+    return {
+        "transcript": transcribe_session(
+            state.get("video_path"), state.get("fallback_id")
+        )
+    }
 
 
 def quiz_route(state: SessionState) -> str:
@@ -53,7 +65,9 @@ def build_graph(checkpointer, publish, model_factory=None):
     graph.add_edge("extract_topics", "evaluate_progress")
     graph.add_edge("evaluate_progress", "generate_quiz")
     graph.add_edge("generate_quiz", "validate_quiz")
-    graph.add_conditional_edges("validate_quiz", quiz_route, ["generate_quiz", "human_review", "failed"])
+    graph.add_conditional_edges(
+        "validate_quiz", quiz_route, ["generate_quiz", "human_review", "failed"]
+    )
     graph.add_edge("human_review", "publish")
     graph.add_edge("publish", END)
     graph.add_edge("failed", END)

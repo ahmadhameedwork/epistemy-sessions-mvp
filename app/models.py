@@ -1,6 +1,14 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, ForeignKey, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -36,10 +44,14 @@ class Session(Base):
     paid: Mapped[bool] = mapped_column(Boolean, default=False)
     share_token: Mapped[str | None] = mapped_column(String(100), unique=True)
     processing_error: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
     tutor: Mapped[User] = relationship(foreign_keys=[tutor_id])
     student: Mapped[User] = relationship(foreign_keys=[student_id])
-    output: Mapped["SessionOutput | None"] = relationship(back_populates="session", uselist=False)
+    output: Mapped["SessionOutput | None"] = relationship(
+        back_populates="session", uselist=False
+    )
 
 
 class SessionOutput(Base):
@@ -54,5 +66,7 @@ class SessionOutput(Base):
     areas_to_improve: Mapped[list] = mapped_column(JSON)
     quiz: Mapped[list] = mapped_column(JSON)
     edited: Mapped[bool] = mapped_column(Boolean, default=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
     session: Mapped[Session] = relationship(back_populates="output")

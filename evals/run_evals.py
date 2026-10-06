@@ -1,4 +1,5 @@
 """Run the synthetic session dataset and publish evaluations to LangSmith."""
+
 import json
 import sqlite3
 import sys
@@ -23,24 +24,48 @@ DATASET_NAME = "epistemy-sessions-synthetic-v1"
 
 
 class QualityAssessment(Result):
-    topics_related: bool = Field(description="Subject and nonempty subtopics match the actual lesson.")
-    progress_grounded: bool = Field(description="Feedback compares specific evidence from both sessions, or explicitly establishes baseline when there is no previous session.")
+    topics_related: bool = Field(
+        description="Subject and nonempty subtopics match the actual lesson."
+    )
+    progress_grounded: bool = Field(
+        description="Feedback compares specific evidence from both sessions, or explicitly establishes baseline when there is no previous session."
+    )
     reason: str
 
 
 def examples() -> list[dict]:
-    transcripts = [(ROOT / f"data/transcripts/session-{index}.txt").read_text(encoding="utf-8") for index in range(1, 4)]
-    return [{"inputs": {"transcript": transcript, "previous_transcript": transcripts[0] if index == 2 else None},
-             "outputs": {"expected_subject": "Mathematics", "comparison_required": index == 2}}
-            for index, transcript in enumerate(transcripts, 1)]
+    transcripts = [
+        (ROOT / f"data/transcripts/session-{index}.txt").read_text(encoding="utf-8")
+        for index in range(1, 4)
+    ]
+    return [
+        {
+            "inputs": {
+                "transcript": transcript,
+                "previous_transcript": transcripts[0] if index == 2 else None,
+            },
+            "outputs": {
+                "expected_subject": "Mathematics",
+                "comparison_required": index == 2,
+            },
+        }
+        for index, transcript in enumerate(transcripts, 1)
+    ]
 
 
 def generate(inputs: dict, model_factory=None) -> dict:
     # Evals exercise generation and repair, stopping at the actual review interrupt.
     with sqlite3.connect(":memory:", check_same_thread=False) as connection:
         graph = build_graph(SqliteSaver(connection), lambda state: {}, model_factory)
-        config = {"configurable": {"thread_id": "evaluation"}, "run_name": "session-evaluation", "tags": ["epistemy", "eval"]}
-        result = graph.invoke(initial_state(0, inputs["transcript"], inputs.get("previous_transcript")), config)
+        config = {
+            "configurable": {"thread_id": "evaluation"},
+            "run_name": "session-evaluation",
+            "tags": ["epistemy", "eval"],
+        }
+        result = graph.invoke(
+            initial_state(0, inputs["transcript"], inputs.get("previous_transcript")),
+            config,
+        )
         if result.get("error"):
             raise ValueError(result["error"])
         return output_from_state(result)
@@ -49,7 +74,11 @@ def generate(inputs: dict, model_factory=None) -> dict:
 def quiz_evaluator(run, example) -> dict:
     questions = (run.outputs or {}).get("quiz", [])
     errors = quiz_errors(questions)
-    return {"key": "quiz_schema", "score": int(not errors), "comment": "; ".join(errors) or "Valid 3–5 question quiz."}
+    return {
+        "key": "quiz_schema",
+        "score": int(not errors),
+        "comment": "; ".join(errors) or "Valid 3–5 question quiz.",
+    }
 
 
 def quality_evaluator(run, example) -> list[dict]:
@@ -61,23 +90,50 @@ Without a previous transcript, require an explicit baseline statement. Explain y
 """ + json.dumps({"inputs": example.inputs, "output": run.outputs}, ensure_ascii=False)
     assessment = build_model().with_structured_output(QualityAssessment).invoke(prompt)
     content = run.outputs or {}
-    topics_nonempty = bool(content.get("subject", "").strip() and content.get("subtopics")
-                           and all(topic.strip() for topic in content["subtopics"]))
-    return [{"key": "topics_related", "score": int(assessment.topics_related and topics_nonempty), "comment": assessment.reason},
-            {"key": "progress_grounded", "score": int(assessment.progress_grounded), "comment": assessment.reason}]
+    topics_nonempty = bool(
+        content.get("subject", "").strip()
+        and content.get("subtopics")
+        and all(topic.strip() for topic in content["subtopics"])
+    )
+    return [
+        {
+            "key": "topics_related",
+            "score": int(assessment.topics_related and topics_nonempty),
+            "comment": assessment.reason,
+        },
+        {
+            "key": "progress_grounded",
+            "score": int(assessment.progress_grounded),
+            "comment": assessment.reason,
+        },
+    ]
 
 
 def run():
     if not settings.langsmith_api_key:
-        raise SystemExit("Set LANGSMITH_API_KEY and your LLM credentials in .env before running evaluations.")
+        raise SystemExit(
+            "Set LANGSMITH_API_KEY and your LLM credentials in .env before running evaluations."
+        )
     configure_tracing()
     client = Client(api_key=settings.langsmith_api_key)
     if not client.has_dataset(dataset_name=DATASET_NAME):
-        dataset = client.create_dataset(dataset_name=DATASET_NAME, description="Three synthetic tutoring lessons; includes a previous-session comparison.")
+        dataset = client.create_dataset(
+            dataset_name=DATASET_NAME,
+            description="Three synthetic tutoring lessons; includes a previous-session comparison.",
+        )
         data = examples()
-        client.create_examples(inputs=[item["inputs"] for item in data], outputs=[item["outputs"] for item in data], dataset_id=dataset.id)
-    results = client.evaluate(generate, data=DATASET_NAME, evaluators=[quiz_evaluator, quality_evaluator],
-                              experiment_prefix="epistemy-mvp", max_concurrency=1)
+        client.create_examples(
+            inputs=[item["inputs"] for item in data],
+            outputs=[item["outputs"] for item in data],
+            dataset_id=dataset.id,
+        )
+    results = client.evaluate(
+        generate,
+        data=DATASET_NAME,
+        evaluators=[quiz_evaluator, quality_evaluator],
+        experiment_prefix="epistemy-mvp",
+        max_concurrency=1,
+    )
     print(results)
 
 

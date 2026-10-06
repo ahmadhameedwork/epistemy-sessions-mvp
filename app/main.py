@@ -37,16 +37,26 @@ app.include_router(share.router)
 async def http_error(request: Request, exc: HTTPException):
     if exc.status_code == 303 and exc.headers and "Location" in exc.headers:
         return RedirectResponse(exc.headers["Location"], status_code=303)
-    return templates.TemplateResponse(request=request, name="error.html",
-                                      context={"message": exc.detail, "status": exc.status_code},
-                                      status_code=exc.status_code, headers=exc.headers)
+    return templates.TemplateResponse(
+        request=request,
+        name="error.html",
+        context={"message": exc.detail, "status": exc.status_code},
+        status_code=exc.status_code,
+        headers=exc.headers,
+    )
 
 
 @app.exception_handler(RequestValidationError)
 async def invalid_request(request: Request, exc: RequestValidationError):
-    return templates.TemplateResponse(request=request, name="error.html",
-                                      context={"message": "Check the form fields and choose valid values.", "status": 422},
-                                      status_code=422)
+    return templates.TemplateResponse(
+        request=request,
+        name="error.html",
+        context={
+            "message": "Check the form fields and choose valid values.",
+            "status": 422,
+        },
+        status_code=422,
+    )
 
 
 @app.get("/health")
