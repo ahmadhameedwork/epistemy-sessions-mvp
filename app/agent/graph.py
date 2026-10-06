@@ -11,11 +11,15 @@ def human_review(state: SessionState) -> dict:
     if not isinstance(decision, dict) or decision.get("approved") is not True:
         raise ValueError("Publishing requires tutor approval.")
     content = EditedOutput.model_validate(decision["output"]).model_dump()
+    return reviewed_state(content, bool(decision.get("edited")))
+
+
+def reviewed_state(content: dict, edited: bool) -> dict:
     return {
         "topics": {"subject": content["subject"], "subtopics": content["subtopics"]},
         "progress": {"summary": content["summary"], "feedback": content["progress_feedback"],
                      "strengths": content["strengths"], "areas_to_improve": content["areas_to_improve"]},
-        "quiz": content["quiz"], "approved": True, "edited": bool(decision.get("edited")),
+        "quiz": content["quiz"], "approved": True, "edited": edited,
     }
 
 

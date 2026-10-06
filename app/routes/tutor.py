@@ -190,8 +190,12 @@ def toggle_paid(request: Request, session_id: int):
 def save_calendly(request: Request, calendly_url: str = Form("")):
     tutor = current_user(request, "tutor")
     value = calendly_url.strip()
-    parsed = urlparse(value)
-    if value and (parsed.scheme != "https" or parsed.hostname != "calendly.com" or parsed.username or parsed.password or parsed.port):
+    try:
+        parsed = urlparse(value)
+        valid = parsed.scheme == "https" and parsed.hostname == "calendly.com" and not parsed.username and not parsed.password and not parsed.port
+    except ValueError:
+        valid = False
+    if value and not valid:
         raise HTTPException(400, "Enter an https://calendly.com/... booking URL, or leave it blank to remove the button.")
     if len(value) > 500:
         raise HTTPException(400, "The Calendly URL is too long.")

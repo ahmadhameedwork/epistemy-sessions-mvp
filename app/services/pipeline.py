@@ -7,7 +7,7 @@ from pathlib import Path
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
 
-from app.agent.graph import build_graph
+from app.agent.graph import build_graph, reviewed_state
 from app.agent.model import configure_tracing
 from app.agent.nodes import output_from_state
 from app.agent.state import initial_state
@@ -117,10 +117,15 @@ class Pipeline:
                 content = EditedOutput.model_validate(output_dict(lesson.output)).model_dump()
                 edited = lesson.output.edited
             snapshot = self.graph.get_state(self.config(session_id))
-            if not any(task.interrupts for task in snapshot.tasks):
+            if any(task.interrupts for task in snapshot.tasks):
+                self.graph.invoke(Command(resume={"approved": True, "output": content, "edited": edited}),
+                                  self.config(session_id), durability="sync")
+            elif snapshot.next == ("publish",) and snapshot.values.get("approved"):
+                # Approval was checkpointed but publishing failed; retry that node only.
+                self.graph.update_state(self.config(session_id), reviewed_state(content, edited), as_node="human_review")
+                self.graph.invoke(None, self.config(session_id), durability="sync")
+            else:
                 raise ValueError("This session has no pending tutor review.")
-            self.graph.invoke(Command(resume={"approved": True, "output": content, "edited": edited}),
-                              self.config(session_id), durability="sync")
             with SessionLocal() as db:
                 return db.get(Session, session_id).share_token
 
