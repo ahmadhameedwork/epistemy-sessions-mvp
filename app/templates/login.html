@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Choose your demo account</h1>
+<p>Tutors upload and review lessons. Students open shared lessons in their vault.</p>
+{% if users %}
+<form method="post" action="/login"><label>Account<select name="user_id">{% for user in users %}<option value="{{ user.id }}">{{ user.name }} — {{ user.role }}</option>{% endfor %}</select></label><button>Log in</button></form>
+{% else %}<p>No accounts yet. Run <code>python seed.py</code> to add the demo accounts.</p>{% endif %}
+{% endblock %}

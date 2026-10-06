@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Epistemy Sessions{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+</head>
+<body>
+  <header><a href="/login">Epistemy Sessions</a><nav><a href="/tutor">Tutor</a><a href="/student">Student</a>{% if request.session.get('user_id') %}<a href="/logout">Log out</a>{% endif %}</nav></header>
+  <main>{% block content %}{% endblock %}</main>
+  <footer>Prototype · Mocked login · Example sessions use synthetic lesson content</footer>
+</body>
+</html>
