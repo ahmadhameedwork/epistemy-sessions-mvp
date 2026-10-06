@@ -1,0 +1,33 @@
+<section id="session-panel" {% if lesson.status == 'processing' and not lesson.processing_error %}hx-get="/tutor/sessions/{{ lesson.id }}?poll=true" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+{% if lesson.processing_error %}
+  <div class="error"><h2>Generation needs attention</h2><p>{{ lesson.processing_error }}</p><p>Your session has not been published. Check the configuration and upload again, or use the documented recovery command after a restart.</p></div>
+{% elif lesson.status == 'processing' %}
+  <div class="notice"><h2>Processing your lesson</h2><p>Generating topics, progress feedback, and quiz questions. This page refreshes automatically.</p><a href="/tutor/sessions/{{ lesson.id }}">Refresh now</a></div>
+{% else %}
+  <p><span class="badge">{{ lesson.status }}</span>{% if lesson.output.edited %} · Tutor edited{% endif %}</p>
+  {% if share_url %}<div class="notice">Share link: <a href="{{ share_url }}">{{ share_url }}</a><p>Saved changes to this shared session appear on the same link.</p></div>{% endif %}
+  {% if errors %}<div class="error" role="alert"><h2>Please correct the content</h2>{% for error in errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+  <form method="post" action="/tutor/sessions/{{ lesson.id }}/save">
+    <label>Subject<input name="subject" value="{{ content.subject }}" required maxlength="200"></label>
+    <label>Subtopics (one per line)<textarea name="subtopics" required>{{ content.subtopics | join('\n') }}</textarea></label>
+    <label>Summary<textarea name="summary" required>{{ content.summary }}</textarea></label>
+    <label>Progress feedback<textarea name="progress_feedback" required>{{ content.progress_feedback }}</textarea></label>
+    <label>Strengths (one per line)<textarea name="strengths">{{ content.strengths | join('\n') }}</textarea></label>
+    <label>Areas to improve (one per line)<textarea name="areas_to_improve">{{ content.areas_to_improve | join('\n') }}</textarea></label>
+    <h2>Quiz</h2>
+    {% for q in content.quiz %}
+    <fieldset><legend>Question {{ loop.index }}</legend>
+      <label>ID<input type="number" min="1" name="q_id" value="{{ q.id }}" required></label>
+      <label>Question<textarea name="q_question" required>{{ q.question }}</textarea></label>
+      <label>Type<select name="q_type"><option value="multiple_choice" {% if q.type == 'multiple_choice' %}selected{% endif %}>Multiple choice</option><option value="short_answer" {% if q.type == 'short_answer' %}selected{% endif %}>Short answer</option></select></label>
+      <label>Options (four lines for multiple choice; leave blank for short answer)<textarea name="q_options">{{ (q.options or []) | join('\n') }}</textarea></label>
+      <label>Answer (exact option text for multiple choice)<input name="q_answer" value="{{ q.answer }}" required></label>
+      <label>Explanation<textarea name="q_explanation" required>{{ q.explanation }}</textarea></label>
+      <label>Difficulty compared with previous session<select name="q_difficulty">{% for value in ['easier', 'same', 'harder'] %}<option value="{{ value }}" {% if q.difficulty == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+    </fieldset>
+    {% endfor %}
+    <button>Save edits</button>
+  </form>
+  {% if lesson.status == 'draft' %}<p>Save your edits first, then approve and share the saved content.</p><form method="post" action="/tutor/sessions/{{ lesson.id }}/share"><button>Approve and share</button></form>{% endif %}
+{% endif %}
+</section>

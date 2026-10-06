@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} — Epistemy{% endblock %}
+{% block content %}
+<p><a href="/tutor">← Your sessions</a></p>
+<h1>{{ lesson.title }}</h1>
+<p>{{ lesson.student.name }} · {{ lesson.created_at.strftime('%Y-%m-%d') }} · <span class="badge">{{ 'Paid' if lesson.paid else 'Unpaid' }}</span></p>
+{% include "tutor_panel.html" %}
+{% endblock %}
