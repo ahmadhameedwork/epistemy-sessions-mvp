@@ -4,5 +4,6 @@
 <p><a href="/tutor">← Your sessions</a></p>
 <h1>{{ lesson.title }}</h1>
 <p>{{ lesson.student.name }} · {{ lesson.created_at.strftime('%Y-%m-%d') }} · <span class="badge">{{ 'Paid' if lesson.paid else 'Unpaid' }}</span></p>
+<form method="post" action="/tutor/sessions/{{ lesson.id }}/paid"><button>Mark {{ 'unpaid' if lesson.paid else 'paid' }}</button></form>
 {% include "tutor_panel.html" %}
 {% endblock %}

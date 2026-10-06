@@ -1,5 +1,6 @@
 import secrets
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
@@ -173,3 +174,27 @@ def share(request: Request, session_id: int):
     except Exception as exc:
         raise HTTPException(502, "Publishing failed. Your edits are saved; retry after checking server logs.") from exc
     return RedirectResponse(f"/tutor/sessions/{session_id}", status_code=303)
+
+
+@router.post("/sessions/{session_id}/paid")
+def toggle_paid(request: Request, session_id: int):
+    tutor = current_user(request, "tutor")
+    with request.app.state.pipeline.lock(session_id):
+        with SessionLocal.begin() as db:
+            lesson = tutor_session(db, session_id, tutor.id)
+            lesson.paid = not lesson.paid
+    return RedirectResponse(f"/tutor/sessions/{session_id}", status_code=303)
+
+
+@router.post("/settings/calendly")
+def save_calendly(request: Request, calendly_url: str = Form("")):
+    tutor = current_user(request, "tutor")
+    value = calendly_url.strip()
+    parsed = urlparse(value)
+    if value and (parsed.scheme != "https" or parsed.hostname != "calendly.com" or parsed.username or parsed.password or parsed.port):
+        raise HTTPException(400, "Enter an https://calendly.com/... booking URL, or leave it blank to remove the button.")
+    if len(value) > 500:
+        raise HTTPException(400, "The Calendly URL is too long.")
+    with SessionLocal.begin() as db:
+        db.get(User, tutor.id).calendly_url = value or None
+    return RedirectResponse("/tutor", status_code=303)
