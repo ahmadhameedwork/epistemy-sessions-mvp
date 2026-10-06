@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import ROOT, settings
 from app.db import init_db
-from app.routes import auth, student, tutor
+from app.routes import auth, share, student, tutor
 from app.services.pipeline import Pipeline
 
 
@@ -26,6 +26,7 @@ app.mount("/static", StaticFiles(directory=str(ROOT / "app/static")), name="stat
 app.include_router(auth.router)
 app.include_router(tutor.router)
 app.include_router(student.router)
+app.include_router(share.router)
 
 
 @app.get("/health")
